@@ -29,7 +29,6 @@ Computability theory classifies problems according to whether they can be solved
 - A language is decidable iff both it and its complement are r.e.
 - There exist r.e. languages whose complement is not r.e.; these are strictly undecidable.
 
-### Mermaid Diagram
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#f0f0f0', 'primaryTextColor': '#000', 'primaryBorderColor': '#333', 'lineColor': '#333', 'tertiaryColor': '#e0e0e0'}}}%%
 flowchart TD
