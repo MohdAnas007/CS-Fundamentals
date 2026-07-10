@@ -10,6 +10,10 @@ Computability theory classifies problems according to whether they can be solved
 
 ### Definitions
 
+> [!NOTE]
+> The following definitions distinguish decidable and recursively enumerable languages.
+
+
 - A language \(L \subseteq \Sigma^*\) is **recursive (decidable)** if there exists a Turing machine \(M\) such that:
   - For every \(w \in \Sigma^*\), \(M\) halts.
   - \(M\) accepts \(w\) iff \(w \in L\).
@@ -25,7 +29,7 @@ Computability theory classifies problems according to whether they can be solved
 - A language is decidable iff both it and its complement are r.e.
 - There exist r.e. languages whose complement is not r.e.; these are strictly undecidable.
 
-**Mermaid Venn Diagram:**
+### Mermaid Diagram
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#f0f0f0', 'primaryTextColor': '#000', 'primaryBorderColor': '#333', 'lineColor': '#333', 'tertiaryColor': '#e0e0e0'}}}%%
 flowchart TD
@@ -84,7 +88,7 @@ Now consider the behaviour of \(D\) on its own description \(\langle D \rangle\)
 
 Hence \(H_{\text{dec}}\) cannot exist, so \(H\) is undecidable.
 
-**Mermaid Flowchart for Diagonalisation:**
+### Mermaid Flowchart
 ```mermaid
 flowchart TD
     subgraph Assumption
@@ -123,7 +127,7 @@ A language \(A\) is **many-one reducible** to language \(B\) (notation \(A \le_m
 - If \(A \le_m B\) and \(A\) is undecidable, then \(B\) is undecidable.
 - The reduction preserves membership status; it is a "yes-instance maps to yes-instance, no-instance maps to no-instance" transformation.
 
-**Mermaid Diagram of Reduction:**
+### Mermaid Diagram
 ```mermaid
 flowchart LR
     subgraph Domain
@@ -179,7 +183,7 @@ Rice’s Theorem immediately implies the undecidability of:
 
 All are undecidable for arbitrary TMs.
 
-**Mermaid Diagram for Rice's Theorem Reduction:**
+### Mermaid Diagram
 ```mermaid
 flowchart TD
     subgraph Assumption["Assume P is non-trivial"]
@@ -254,7 +258,7 @@ The top string equals the bottom string.
 
 This reduction is intricate but standard. The critical point is that the existence of a match is equivalent to the existence of a finite halting computation.
 
-**Mermaid Illustration of PCP Reduction Concept:**
+### Mermaid Diagram
 ```mermaid
 flowchart LR
     subgraph Dominoes["Domino Set Construction"]
@@ -277,6 +281,9 @@ flowchart LR
 **Key Insight:** The match forces a sequence of configurations where each configuration's boundary is synchronised. The undecidability of PCP is a powerful tool because it is a "pure string rewriting" problem with no explicit machine model, yet it captures all computational power.
 
 ---
+
+> [!IMPORTANT]
+> The summary table below is an excellent last-minute revision aid.
 
 ## Summary Table
 
