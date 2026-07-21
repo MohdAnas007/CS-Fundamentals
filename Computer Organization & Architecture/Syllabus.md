@@ -1,7 +1,3 @@
-Here is a comprehensive, chapter-wise syllabus for **Computer Organization and Architecture (COA)**, presented in English. This syllabus is structured to provide a logical flow from fundamentals to advanced concepts, suitable for a semester-long university course.
-
----
-
 ### Course Information
 - **Course Title**: Computer Organization and Architecture (COA)
 - **Prerequisites**: Digital Logic Design, Basic Programming (C/C++), Data Structures
