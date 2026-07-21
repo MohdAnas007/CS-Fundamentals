@@ -11,7 +11,7 @@ The evolution of computers is defined by the underlying switching technology. Ea
 - **4th Gen (1970s–1990s): VLSI (Very Large Scale Integration)** – Millions of transistors per chip. The personal computer revolution (Intel 4004, 8086). *Examples: Intel 486, Pentium.*
 - **5th Gen (1990s–Present): ULSI / Multi-core / AI** – Billions of transistors. Shift from clock-speed scaling to parallel cores and domain-specific accelerators (GPUs, TPUs).
 
-**Mermaid Timeline Diagram:**
+**Timeline Diagram:**
 ```mermaid
 timeline
     title Computer Generations Evolution
@@ -43,7 +43,7 @@ Proposed by Michael J. Flynn in 1966, this classification is based on the number
 - **MISD (Multiple Instruction, Single Data):** Multiple instructions operate on a single data stream. Rarely used in general computing; mostly found in fault-tolerant systems (redundant execution). *Example: Space shuttles (multiple computers checking the same sensor).*
 - **MIMD (Multiple Instruction, Multiple Data):** Each processor executes its own instruction on its own data. Modern multi-core systems and distributed clusters. *Examples: Intel Core i9, AMD Ryzen, clusters.*
 
-**Mermaid Classification Diagram:**
+**Classification Diagram:**
 ```mermaid
 flowchart TD
     A[Flynn's Taxonomy] --> B{Single or Multiple<br>Instruction Stream?}
@@ -76,7 +76,7 @@ John Von Neumann proposed the **"Stored Program"** concept in 1945. The core ide
 3.  **Execute:** The ALU performs the operation, or the control unit calculates the next address (for jumps).
 4.  **Store (Write-back):** The result is written back into a register or memory.
 
-**Mermaid Architecture Diagram:**
+**Architecture Diagram:**
 ```mermaid
 flowchart LR
     subgraph CPU[Central Processing Unit]
@@ -108,7 +108,7 @@ flowchart LR
     Data -.->|Read/Write via| Bus
 ```
 
-**Mermaid Flowchart for the Cycle:**
+**Flowchart for the Cycle:**
 ```mermaid
 flowchart TD
     Start([Start]) --> PC[PC points to next instruction in Memory]
@@ -163,7 +163,7 @@ A computer system is built from four primary functional units that communicate v
     - **Data Bus:** Carries the actual data (bidirectional).
     - **Control Bus:** Carries control signals (Read/Write, Interrupts, Clock).
 
-**Mermaid System Interconnection Diagram:**
+**System Interconnection Diagram:**
 ```mermaid
 flowchart TD
     subgraph CPU_Block[Central Processing Unit]
