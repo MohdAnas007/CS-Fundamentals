@@ -108,21 +108,6 @@ flowchart LR
     Data -.->|Read/Write via| Bus
 ```
 
-**Flowchart for the Cycle:**
-```mermaid
-flowchart TD
-    Start([Start]) --> PC[PC points to next instruction in Memory]
-    PC --> Fetch[Fetch: Load instruction into IR]
-    Fetch --> Decode[Decode: Control Unit interprets opcode]
-    Decode --> E{Is it a Branch?}
-    E -->|No| Execute[Execute: ALU processes data]
-    E -->|Yes| Jump[Calculate Target Address & Update PC]
-    Execute --> WB[Write-back: Store result to Register/Memory]
-    Jump --> Next
-    WB --> Next[Update PC to next sequential address]
-    Next --> PC
-```
-
 ---
 
 #### 1.4 Computer Architecture vs. Computer Organization
