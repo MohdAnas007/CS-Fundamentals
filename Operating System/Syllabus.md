@@ -76,6 +76,7 @@
   * Deadlock avoidance (Banker’s algorithm)
   * Deadlock detection (with recovery)
   * Deadlock ignorance (Ostrich algorithm)
+* Deadlock vs starvation (and livelock)
 
 ---
 
