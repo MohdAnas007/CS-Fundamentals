@@ -123,12 +123,14 @@ Parity is the simplest error detection technique. A single **parity bit** is add
 
 ```mermaid
 flowchart TD
-    subgraph 2D Parity Matrix
-        A[1 0 1 1 | 1] --> B[0 1 1 0 | 0]
-        B --> C[1 1 0 1 | 1]
-        C --> D[0 0 1 1 | 0]
-        D --> E[0 0 1 1 | 0]
+    subgraph P["2D Parity Matrix"]
+        A["1 0 1 1 : 1"]
+        B["0 1 1 0 : 0"]
+        C["1 1 0 1 : 1"]
+        D["0 0 1 1 : 0"]
+        E["0 0 1 1 : 0"]
     end
+    A --> B --> C --> D --> E
     style A fill:#f9f
     style B fill:#f9f
     style C fill:#f9f
