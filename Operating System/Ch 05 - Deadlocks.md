@@ -17,11 +17,34 @@ A deadlock occurs when two or more processes are each waiting indefinitely for a
 | **No preemption** | Resources cannot be forcibly taken away from a process. Only the holding process can release them voluntarily. |
 | **Circular wait** | There exists a set {P₀, P₁, …, Pₙ} such that P₀ waits for a resource held by P₁, P₁ waits for P₂, …, Pₙ waits for P₀. |
 
+All four must hold **at the same time**. Break any single one and deadlock becomes impossible – this is exactly what the prevention strategies later in the chapter do.
+
 **Real‑life analogy**: Two cars meet at a four‑way stop intersection.
 - **Mutual exclusion** – Only one car can occupy the intersection at a time.
 - **Hold and wait** – Each car holds its position (already in the intersection or at the line) and waits for the other to move.
 - **No preemption** – No traffic officer can push a car aside.
 - **Circular wait** – Car A waits for Car B to clear the intersection; Car B waits for Car A to clear. Both block.
+
+**The same thing in code** – the classic two‑lock deadlock. Each thread grabs one mutex, then reaches for the other:
+
+```c
+// Thread 1                     // Thread 2
+lock(&mutexA);                  lock(&mutexB);
+lock(&mutexB);   // blocks      lock(&mutexA);   // blocks
+// critical section             // critical section
+unlock(&mutexB);                unlock(&mutexA);
+unlock(&mutexA);                unlock(&mutexB);
+```
+
+If Thread 1 acquires `mutexA` and Thread 2 acquires `mutexB` before either reaches its second `lock()`, both block forever. Note that this program may run correctly thousands of times – deadlock only appears when the interleaving is just wrong, which is what makes these bugs so hard to reproduce.
+
+```mermaid
+flowchart LR
+    T1["Thread 1\nholds mutexA"] -->|"waits for mutexB"| T2["Thread 2\nholds mutexB"]
+    T2 -->|"waits for mutexA"| T1
+```
+
+That closed loop of arrows is the circular wait condition. Every deadlock, no matter how many processes are involved, reduces to a cycle like this one.
 
 ---
 
@@ -31,32 +54,52 @@ A **Resource Allocation Graph (RAG)** is a directed graph that visually represen
 
 - **Vertices**: Two types
   - Process vertices (circles): P₁, P₂, …, Pₙ
-  - Resource vertices (squares): R₁, R₂, …, Rₘ (each has several identical instances)
+  - Resource vertices (squares): R₁, R₂, …, Rₘ (each may have one or more identical instances)
 - **Edges**:
   - **Request edge** (Pᵢ → Rⱼ): Process Pᵢ has requested an instance of Rⱼ and is waiting.
   - **Assignment edge** (Rⱼ → Pᵢ): An instance of Rⱼ has been allocated to Pᵢ.
 
-**Example graph** (no deadlock):
+The direction of the arrow is the whole trick: **towards** a resource means “I am asking for this”, **away from** a resource means “I already have this”.
 
-```
-P1 → R1 (request), R1 → P2 (assignment), P2 → R2 (request), R2 → P1 (assignment)
-```
-
-**Deadlock detection with RAG**:
-- If the graph has **no cycles** → no deadlock.
-- If the graph has a cycle **and** each resource type has only one instance → deadlock exists.
-- If a resource type has multiple instances, a cycle may indicate potential deadlock, but not necessarily (processes could be waiting but not circularly).
+**Case 1 – No cycle, no deadlock**. P1 holds R1 and wants nothing else; P2 waits for R1. As soon as P1 finishes, R1 frees up and P2 proceeds.
 
 ```mermaid
-flowchart TD
-    P1[P1] -->|request| R1((R1))
-    R1 -->|allocated| P2[P2]
-    P2 -->|request| R2((R2))
-    R2 -->|allocated| P1
-    
-    style R1 fill:#f9f,stroke:#333
-    style R2 fill:#f9f,stroke:#333
+flowchart LR
+    R1["R1"] -->|allocated| P1(("P1"))
+    P2(("P2")) -->|request| R1
 ```
+
+**Case 2 – Cycle with single‑instance resources → deadlock**. P1 holds R1 and requests R2; P2 holds R2 and requests R1. Neither can move.
+
+```mermaid
+flowchart LR
+    R1["R1"] -->|allocated| P1(("P1"))
+    P1 -->|request| R2["R2"]
+    R2 -->|allocated| P2(("P2"))
+    P2 -->|request| R1
+```
+
+**Case 3 – Cycle with multiple instances → not necessarily deadlock**. Here R1 and R2 each have **two** instances, and all four are allocated. There is a cycle P1 → R2 → P2 → R1 → P1, yet no deadlock: the spare instances are held by P3 and P4, neither of which is waiting for anything. When P4 finishes it releases its instance of R2, P1 takes it, and the cycle unravels.
+
+```mermaid
+flowchart LR
+    R1["R1\n(2 instances)"] -->|allocated| P1(("P1"))
+    R1 -->|allocated| P3(("P3"))
+    P1 -->|request| R2["R2\n(2 instances)"]
+    R2 -->|allocated| P2(("P2"))
+    R2 -->|allocated| P4(("P4"))
+    P2 -->|request| R1
+```
+
+**Rules for reading a RAG**:
+
+| Graph shape | Conclusion |
+|-------------|------------|
+| No cycle | **No deadlock**, guaranteed. |
+| Cycle, all resources have a single instance | **Deadlock**, guaranteed. |
+| Cycle, some resource has multiple instances | **Possible** deadlock – must check further (run the detection algorithm). |
+
+In short: a cycle is a *necessary* condition for deadlock, but only *sufficient* when every resource in the cycle has exactly one instance.
 
 **Real‑life analogy**: A whiteboard showing who holds which resource (e.g., printer, scanner) and who is waiting for what. An arrow from a person to a resource means “I want that”; an arrow from resource to person means “this person has it”. If you see a circle of arrows, people may be deadlocked.
 
@@ -122,15 +165,80 @@ If granting a request leads to an **unsafe state**, the OS delays the request (p
 3. Pretend to allocate: `Available -= Request[i]`, `Allocation[i] += Request[i]`, `Need[i] -= Request[i]`.
 4. Run Safety Algorithm. If safe, allocate for real; else roll back and Pᵢ waits.
 
-**Example** (single resource type):
+**Safe, unsafe, and deadlocked states** – these are not the same thing. Every deadlocked state is unsafe, but an unsafe state is not yet a deadlock; it is a state from which the system *might* drift into one. The Banker’s algorithm is conservative: it refuses to leave the safe region at all.
 
-| Process | Allocation | Max | Need |
-|---------|------------|-----|------|
-| P0 | 0 | 10 | 10 |
-| P1 | 3 | 5  | 2   |
-| P2 | 2 | 8  | 6   |
+```mermaid
+flowchart TD
+    All["All possible states"] --> Safe["Safe\n(a completion order exists)"]
+    All --> Unsafe["Unsafe\n(no guaranteed completion order)"]
+    Unsafe --> DL["Deadlocked\n(nobody can move)"]
+```
 
-Initially Available = 3. Safety sequence: P1 (needs 2, available 3) → finish, release 3+3=6 available → P2 (needs 6) → finish, release 6+2=8 → P0 (needs 10? wait, available 8 < 10, so unsafe!) Actually this example is unsafe. Proper calculation shows the algorithm works.
+---
+
+#### Worked Example 1 – Single Resource Type
+
+A system has **12 instances** of one resource type.
+
+| Process | Allocation | Max | Need (Max − Allocation) |
+|---------|------------|-----|-------------------------|
+| P0 | 5 | 10 | 5 |
+| P1 | 2 | 4  | 2 |
+| P2 | 2 | 9  | 7 |
+
+Allocated = 5 + 2 + 2 = 9, so **Available = 12 − 9 = 3**.
+
+Run the safety algorithm with `Work = 3`:
+
+| Step | Candidate | Need ≤ Work? | Work after it finishes |
+|------|-----------|--------------|------------------------|
+| 1 | P1 | 2 ≤ 3 ✔ | 3 + 2 = 5 |
+| 2 | P0 | 5 ≤ 5 ✔ | 5 + 5 = 10 |
+| 3 | P2 | 7 ≤ 10 ✔ | 10 + 2 = 12 |
+
+All processes finish, so the state is **safe** with safety sequence **⟨P1, P0, P2⟩**.
+
+Notice the order matters. Starting with P0 (needs 5 > 3) or P2 (needs 7 > 3) is impossible – only P1 can run first, and it is P1 returning its resources that unblocks everyone else.
+
+**Now suppose P2 requests one more instance.** Tentatively grant it: `Allocation[P2] = 3`, `Need[P2] = 6`, `Available = 2`.
+
+| Step | Candidate | Need ≤ Work? | Work after it finishes |
+|------|-----------|--------------|------------------------|
+| 1 | P1 | 2 ≤ 2 ✔ | 2 + 2 = 4 |
+| 2 | P0 | 5 ≤ 4 ✘ | — |
+| 2 | P2 | 6 ≤ 4 ✘ | — |
+
+After P1 finishes, only 4 instances are free but both remaining processes need more than that. No safety sequence exists, so this state is **unsafe**. The Banker’s algorithm therefore **denies P2’s request** and makes it wait – even though the resource was physically available.
+
+---
+
+#### Worked Example 2 – Multiple Resource Types
+
+The standard textbook case: five processes and three resource types with totals **A = 10, B = 5, C = 7**.
+
+| Process | Allocation (A B C) | Max (A B C) | Need (A B C) |
+|---------|--------------------|-------------|--------------|
+| P0 | 0 1 0 | 7 5 3 | 7 4 3 |
+| P1 | 2 0 0 | 3 2 2 | 1 2 2 |
+| P2 | 3 0 2 | 9 0 2 | 6 0 0 |
+| P3 | 2 1 1 | 2 2 2 | 0 1 1 |
+| P4 | 0 0 2 | 4 3 3 | 4 3 1 |
+
+Total allocated = (7, 2, 5), so **Available = (10, 5, 7) − (7, 2, 5) = (3, 3, 2)**.
+
+| Step | Candidate | Need ≤ Work? | Work after it finishes |
+|------|-----------|--------------|------------------------|
+| 1 | P1 | (1,2,2) ≤ (3,3,2) ✔ | (3,3,2) + (2,0,0) = (5,3,2) |
+| 2 | P3 | (0,1,1) ≤ (5,3,2) ✔ | (5,3,2) + (2,1,1) = (7,4,3) |
+| 3 | P4 | (4,3,1) ≤ (7,4,3) ✔ | (7,4,3) + (0,0,2) = (7,4,5) |
+| 4 | P2 | (6,0,0) ≤ (7,4,5) ✔ | (7,4,5) + (3,0,2) = (10,4,7) |
+| 5 | P0 | (7,4,3) ≤ (10,4,7) ✔ | (10,4,7) + (0,1,0) = (10,5,7) |
+
+The state is **safe** with sequence **⟨P1, P3, P4, P2, P0⟩**. A comparison like `(1,2,2) ≤ (3,3,2)` must hold for **every** resource type – a single component exceeding `Work` disqualifies the process for that round.
+
+> **Exam tip**: safety sequences are not unique. ⟨P1, P3, P4, P0, P2⟩ also works here. Any valid sequence proves the state is safe, so if a question asks "is this state safe?", finding one sequence is enough.
+
+---
 
 **Limitations**:
 - Fixed number of processes/resources.
@@ -147,7 +255,30 @@ Allow deadlock to occur, detect it, and then break it. Used in systems where dea
 
 **Detection with Single Instance per Resource** – Use the **Wait‑for Graph**: a reduced version of the resource allocation graph where resource nodes are removed; an edge Pᵢ → Pⱼ means Pᵢ waits for a resource held by Pⱼ. Periodic graph cycle detection (e.g., depth‑first search) identifies deadlock.
 
+To build it, collapse each pair of edges Pᵢ → Rₖ → Pⱼ into a single edge Pᵢ → Pⱼ:
+
+```mermaid
+flowchart LR
+    subgraph RAG["Resource allocation graph"]
+        direction LR
+        PA(("P1")) -->|request| RX["R1"]
+        RX -->|allocated| PB(("P2"))
+        PB -->|request| RY["R2"]
+        RY -->|allocated| PA
+    end
+    subgraph WFG["Wait-for graph"]
+        direction LR
+        PC(("P1")) -->|waits for| PD(("P2"))
+        PD -->|waits for| PC
+    end
+    RAG --> WFG
+```
+
+The cycle survives the reduction, so this system is deadlocked. Cycle detection costs O(n²) for n processes.
+
 **Detection with Multiple Instances** – Use an algorithm similar to Banker’s but without `Max` – just look for processes that can finish with current available resources. If none can finish, deadlock exists.
+
+**How often should detection run?** This is a real trade‑off. Running it on every resource request catches deadlock the instant it forms and identifies exactly which process caused it, but the overhead is severe. Running it once an hour is cheap, yet several cycles may exist by then and it becomes impossible to tell which process to blame. A common compromise is to trigger detection only when CPU utilisation drops below a threshold (say 40%), since a system with many blocked processes tends to go idle.
 
 **Recovery Options**:
 
@@ -167,10 +298,48 @@ In practice, many systems opt to simply restart the system or kill processes man
 The **Ostrich Algorithm** assumes deadlocks are so rare that the overhead of prevention, avoidance, or detection is not worth the cost. The OS does nothing to handle deadlocks.
 
 - Used in **most general‑purpose OSes** (Windows, Linux, macOS) for most resource types.
-- Why? Deadlocks typically occur due to programmer bugs, not OS design. The OS provides locking primitives; it's the programmer’s responsibility to avoid circular wait.
+- Why? Deadlocks typically occur due to programmer bugs, not OS design. The OS provides locking primitives; it’s the programmer’s responsibility to avoid circular wait.
 - If a deadlock happens, the system freezes or crashes – user reboots.
 
 **Real‑life**: Putting your head in the sand. The ostrich ignores the problem. For many applications (e.g., your web browser deadlocking – you just restart it), this is acceptable.
+
+---
+
+## Deadlock vs Starvation
+
+Both leave a process waiting for a long time, which is why they are so easily confused. The difference is whether the wait can *ever* end on its own.
+
+In a **deadlock**, the processes involved are blocked permanently. Nothing in the system can change that – the resources they need are held by each other, so no amount of waiting helps. In **starvation** (also called *indefinite postponement*), the process is technically still eligible to run. Resources do become free, but the scheduler keeps handing them to someone else. A starving process could be served at any moment; it just never is.
+
+```mermaid
+flowchart TD
+    Start["Process is waiting\nfor a long time"] --> Q{"Can the resource\never become available\nto it?"}
+    Q -->|"No – held in a cycle\nby other blocked processes"| D["Deadlock\nWait is permanent by structure"]
+    Q -->|"Yes – but it keeps\nlosing to other processes"| S["Starvation\nWait is caused by policy"]
+    D --> DF["Fix: prevention, avoidance,\ndetection and recovery"]
+    S --> SF["Fix: aging, FIFO ordering,\nbounded waiting"]
+```
+
+| Aspect | Deadlock | Starvation |
+|--------|----------|------------|
+| **Cause** | Circular wait – all four necessary conditions hold. | Scheduling or priority policy that keeps favouring other processes. |
+| **Processes affected** | A *set* of processes, blocking each other. | Usually a *single* low‑priority process. |
+| **Resources** | Held by the blocked processes themselves; never released. | Are released regularly, but always allocated to someone else. |
+| **Can it resolve on its own?** | **Never** – outside intervention is required. | **Yes** – if the load drops or priorities shift, the process may finally run. |
+| **CPU utilisation** | Involved processes are blocked; utilisation may drop sharply. | System stays busy – it is doing useful work, just not for the victim. |
+| **Also known as** | Circular wait, deadly embrace. | Indefinite postponement, indefinite blocking. |
+| **Typical remedy** | Prevention, avoidance (Banker’s), detection and recovery. | **Aging** – gradually raise the priority of a process the longer it waits. |
+| **Relationship** | Deadlock always implies its processes are starved of resources. | Starvation does **not** imply deadlock. |
+
+**Real‑life analogy**: Deadlock is a traffic gridlock where four cars each block the next in a circle – nobody moves again until a traffic officer physically intervenes. Starvation is a driver trying to merge onto a busy motorway during rush hour: the road is moving fine and gaps do appear, but faster cars keep taking them. The driver *could* merge at any moment, and eventually will once traffic thins.
+
+**A third case – livelock**. Two processes keep responding to each other and changing state, but make no forward progress. Unlike deadlock, they are not blocked – they are actively burning CPU. The classic analogy is two people meeting in a corridor who both step aside in the same direction, over and over. Deadlock is a traffic jam; livelock is a polite standoff.
+
+| | Deadlock | Livelock | Starvation |
+|---|----------|----------|------------|
+| **Process state** | Blocked | Running | Ready / waiting |
+| **CPU consumed** | None | Wasted on retries | None (for the victim) |
+| **Resolves itself?** | No | Rarely (needs randomised backoff) | Possibly |
 
 ---
 
@@ -180,9 +349,12 @@ The **Ostrich Algorithm** assumes deadlocks are so rare that the overhead of pre
 |---------|--------------|
 | Deadlock conditions | Mutual exclusion, hold and wait, no preemption, circular wait (all four needed). |
 | Resource allocation graph | Visual tool to represent processes, resources, requests, and allocations. |
+| Cycles in a RAG | No cycle → no deadlock. Cycle + single instances → deadlock. Cycle + multiple instances → maybe. |
 | Deadlock prevention | Break one of the four conditions (e.g., resource ordering, request all at once). |
 | Deadlock avoidance | Banker’s algorithm – ensure system stays in safe state; requires max needs. |
+| Safe vs unsafe state | Safe → a completion order exists. Unsafe → no guarantee, but not yet a deadlock. |
 | Deadlock detection | Periodic check (wait‑for graph or detection algorithm); then recover by termination or preemption. |
 | Deadlock ignorance | Do nothing – used by Windows, Linux for most resources; user reboots. |
+| Deadlock vs starvation | Deadlock never resolves without intervention; starvation may resolve, and is cured by aging. |
 
 Understanding deadlocks closes the loop on concurrency control. The next chapter moves to the physical side of the OS: memory management.
