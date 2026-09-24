@@ -1,6 +1,8 @@
 # Chapter 3: Encapsulation and Data Hiding
 
 Encapsulation is a fundamental principle of object-oriented programming that bundles data and the methods that operate on that data within a single unit (a class) while restricting direct external access to the internal state. Data hiding refers specifically to making data members `private` or `protected` to prevent accidental or malicious interference.
+
+\
 Anas definition -
 Encapsulation is the fundamental concept of OOP in which data and methods are bind together  in a single unit called class.
 
