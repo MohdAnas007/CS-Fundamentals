@@ -242,39 +242,42 @@ flowchart LR
 
 ## 5. Mutable Keyword
 
-The `mutable` keyword allows a data member to be modified even within a `const` member function. It is typically used for:
-
-- Caching computed results
-- Reference counting / weak pointers
-- Logging and debugging counters
-- Mutex locks for thread-safe const methods
+The `mutable` keyword allows a data member to be modified even within a `const` member function.
 
 ```cpp
-class StringCache {
-private:
-    std::string data;
-    mutable size_t hashCache = 0;
-    mutable bool cacheValid = false;
-    
+#include <iostream>
+using namespace std;
+
+class Student {
+    int marks;
+    mutable int count;  // Can be changed in const function
+
 public:
-    StringCache(const std::string& str) : data(str) {}
-    
-    // Const member function - but modifies cache
-    size_t getHash() const {
-        if (!cacheValid) {
-            hashCache = std::hash<std::string>{}(data);
-            cacheValid = true;   // OK: mutable allows modification
-        }
-        return hashCache;
+    Student(int m) {
+        marks = m;
+        count = 0;
     }
-    
-    void setData(const std::string& newData) {
-        data = newData;
-        cacheValid = false;      // Non-const, normal modification
+
+    void show() const {
+        cout << "Marks: " << marks << endl;
+
+        count++;  // ✅ Allowed because count is mutable
+
+        cout << "Show called: " << count << " times" << endl;
     }
 };
-```
 
+int main() {
+
+    const Student s(90);
+
+    s.show();  // const object can call const function
+    s.show();
+
+    return 0;
+}
+```
+Common uses: caching, counters, logging, and internal implementation details.
 **Important:** `mutable` should not be used to cheat const-correctness for logical state. Use it only for implementation details that do not affect the observable state of the object.
 
 ## Summary Table
