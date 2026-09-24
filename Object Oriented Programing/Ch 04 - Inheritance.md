@@ -226,25 +226,39 @@ classDiagram
 Hybrid inheritance combines multiple and multilevel inheritance. The "diamond problem" occurs when a class inherits from two classes that share a common base class.
 
 ```cpp
+#include <iostream>
+using namespace std;
+
 class Base {
 public:
-    void common() { /* ... */ }
+    void show() {
+        cout << "Base function" << endl;
+    }
 };
 
 class Derived1 : public Base {
-public:
-    void derived1Func() { /* ... */ }
 };
 
 class Derived2 : public Base {
-public:
-    void derived2Func() { /* ... */ }
 };
 
-// Diamond shape: Both paths lead to Base
+// Diamond inherits from both Derived1 and Derived2
 class Diamond : public Derived1, public Derived2 {
-    // Ambiguity: which Base::common() is inherited?
 };
+
+int main() {
+    Diamond d;
+
+    // d.show();  // ❌ Error: Ambiguous
+                  // Which Base::show() should be called?
+                  // Derived1 -> Base
+                  // Derived2 -> Base
+
+    d.Derived1::show();  // ✅ Specify the path
+    d.Derived2::show();  // ✅ Specify the path
+
+    return 0;
+}
 ```
 
 ```mermaid
