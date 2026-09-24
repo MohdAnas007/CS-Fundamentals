@@ -83,11 +83,13 @@ Const correctness ensures that objects and functions that should not modify stat
 
 A `const` object can only call member functions that are declared `const` (i.e., functions that do not modify the object).
 
+
+mutable is used when u want the const variable to change in const declared function 
 ```cpp
 class Rectangle {
 private:
     double width, height;
-    
+    mutable int accessCount = 0;
 public:
     Rectangle(double w, double h) : width(w), height(h) {}
     
@@ -103,7 +105,7 @@ public:
     }
     
     // Mutable allows modification even in const (see section 5)
-    mutable int accessCount = 0;
+    
     void logAccess() const {
         accessCount++;  // OK: mutable
     }
