@@ -371,25 +371,30 @@ flowchart TD
 ## 8. `explicit` Keyword
 
 Prevents implicit conversions and copy-initialization that could lead to unintended behavior.
-
+explicit = "Don't convert automatically; make the programmer create the object explicitly."
 ```cpp
-class Complex {
-    double real, imag;
+#include <iostream>
+using namespace std;
+
+class Number {
 public:
-    explicit Complex(double r = 0, double i = 0) : real(r), imag(i) {}
-    
-    Complex operator+(const Complex& other) const {
-        return Complex(real + other.real, imag + other.imag);
+    // explicit prevents automatic conversion from int to Number
+    explicit Number(int x) {
+        cout << "Number created: " << x << endl;
     }
 };
 
-Complex c1(3.0, 4.0);
-// Complex c2 = 5.0;   // Error: constructor is explicit
-Complex c3{5.0};       // OK: direct initialization
+int main() {
 
-// Without explicit, this would compile:
-// Complex c2 = 5.0;   // Implicitly calls Complex(5.0)
-// c1 = c1 + 10;       // Implicit conversion from int to Complex
+    Number n1(10);      // ✅ Direct initialization - allowed
+
+    Number n2{20};      // ✅ Direct initialization - allowed
+
+    // Number n3 = 30;  // ❌ Error: explicit constructor
+                        // C++ cannot automatically convert 30 into Number
+
+    return 0;
+}
 ```
 
 Use `explicit` for constructors that take one argument (or multi-argument where only first has no default) unless implicit conversion is intentionally desired.
